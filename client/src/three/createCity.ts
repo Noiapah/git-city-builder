@@ -1,13 +1,7 @@
 import { BoxGeometry, Group, Mesh, MeshStandardMaterial } from "three";
 import type { ContributionYear } from "../../../shared/github";
-import {
-  COLORS,
-  FLOOR_HEIGHT,
-  PLOT_GAP,
-  PLOT_HEIGHT,
-  PLOT_SIZE,
-  intensity,
-} from "./constants";
+import { COLORS, PLOT_GAP, PLOT_HEIGHT, PLOT_SIZE } from "./constants";
+import { createBuildingFactory } from "./createBuilding";
 export function createCity(data: ContributionYear) {
   const group = new Group();
   const geometry = new BoxGeometry(1, 1, 1);
@@ -19,9 +13,7 @@ export function createCity(data: ContributionYear) {
     color: COLORS.ground,
     roughness: 1,
   });
-  const materials = COLORS.buildings.map(
-    (color) => new MeshStandardMaterial({ color, roughness: 0.85 }),
-  );
+  const buildings = createBuildingFactory(geometry);
   const columns = Math.max(...data.days.map((day) => day.week), 0) + 1;
   const step = PLOT_SIZE + PLOT_GAP;
   const ground = new Mesh(geometry, groundMaterial);
@@ -41,20 +33,18 @@ export function createCity(data: ContributionYear) {
     group.add(plot);
     targets.push(plot);
     if (day.contributions > 0) {
-      const height = day.contributions * FLOOR_HEIGHT;
-      const building = new Mesh(
-        geometry,
-        materials[intensity(day.contributions)],
+      targets.push(
+        buildings.create(
+          day,
+          `${data.username.toLowerCase()}/${day.date}`,
+          x,
+          z,
+          group,
+        ),
       );
-      building.scale.set(0.82 * PLOT_SIZE, height, 0.82 * PLOT_SIZE);
-      building.position.set(x, (height + PLOT_HEIGHT) / 2, z);
-      building.castShadow = true;
-      building.receiveShadow = true;
-      building.userData = { ...day };
-      group.add(building);
-      targets.push(building);
     }
   }
+  buildings.finish(group);
   return {
     group,
     targets,
@@ -62,7 +52,7 @@ export function createCity(data: ContributionYear) {
       geometry.dispose();
       plotMaterial.dispose();
       groundMaterial.dispose();
-      materials.forEach((material) => material.dispose());
+      buildings.dispose();
       group.clear();
     },
   };

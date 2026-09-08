@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ContributionDay } from "../../../shared/github";
-defineProps<{ day: ContributionDay }>();
+defineProps<{ day: ContributionDay; styleName?: string }>();
 const formatDate = (date: string) =>
   new Date(`${date}T00:00:00Z`).toLocaleDateString("en-US", {
     month: "long",
@@ -20,5 +20,6 @@ const formatDate = (date: string) =>
         ? `${day.contributions} floors · Week ${day.week + 1}`
         : "An empty plot · A little room to grow"
     }}</small>
+    <small v-if="styleName">{{ styleName }}</small>
   </div>
 </template>

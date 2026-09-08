@@ -3,7 +3,7 @@ import { onMounted, onBeforeUnmount, ref, shallowRef, watch } from "vue";
 import type { ContributionYear } from "../../../shared/github";
 import { createScene, type Inspection } from "../three/createScene";
 import BuildingTooltip from "./BuildingTooltip.vue";
-import { COLORS } from "../three/constants";
+import { BUILDING_STYLES } from "../three/buildingStyles";
 const props = defineProps<{ data: ContributionYear; sample?: boolean }>();
 const host = ref<HTMLDivElement>();
 const hover = shallowRef<Inspection | null>(null);
@@ -69,7 +69,7 @@ onBeforeUnmount(() => scene?.dispose());
         top: `${Math.max(80, hover.y - 98)}px`,
       }"
     >
-      <BuildingTooltip :day="hover.day" />
+      <BuildingTooltip :day="hover.day" :style-name="hover.styleName" />
     </div>
     <div v-if="selected" class="selected-tooltip">
       <button
@@ -78,7 +78,7 @@ onBeforeUnmount(() => scene?.dispose());
         @click="selected = null"
       >
         ×</button
-      ><BuildingTooltip :day="selected.day" />
+      ><BuildingTooltip :day="selected.day" :style-name="selected.styleName" />
     </div>
     <div v-if="error" class="canvas-error" role="alert">{{ error }}</div>
     <div class="viewer-bottom">
@@ -87,13 +87,14 @@ onBeforeUnmount(() => scene?.dispose());
         ><span>⌘ <b>Right-drag / Ctrl-drag</b> to pan</span>
       </div>
       <div class="legend">
-        <span>Less</span
+        <span>Building styles</span
         ><i
-          v-for="color in [COLORS.plot, ...COLORS.buildings]"
-          :key="color"
-          :style="{ background: color }"
+          v-for="style in BUILDING_STYLES"
+          :key="style.name"
+          :title="style.name"
+          :style="{ background: style.wall }"
         ></i
-        ><span>More</span>
+        ><span>Height = contributions</span>
       </div>
     </div>
   </section>

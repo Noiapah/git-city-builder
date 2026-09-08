@@ -11,7 +11,7 @@ Screenshot placeholder: the landing page features an interactive, clearly labele
 - Search a GitHub username and choose any year from 2008 through the current year.
 - Public contribution data fetched directly from GitHub's calendar. No token, account connection, or sign-in required.
 - Complete 365- or 366-day calendars, including empty and future plots.
-- Exact contribution heights with secondary green intensity colors.
+- Exact contribution heights with five architectural styles, textured façades, floor-by-floor windows, entrances, parapets, skylights, and rooftop ventilation.
 - Rotate, zoom, pan, reset the camera, and inspect dates by hovering or clicking.
 - Shareable `/:username/:year` routes, including direct page loads.
 - Responsive canvas, loading, retry, empty states, validation, and readable API errors.
@@ -85,6 +85,8 @@ Cheerio parses calendar cells and their associated tooltips to obtain exact coun
 This reads the contribution calendar visible to a signed-out visitor. It cannot access hidden private activity or repository details. GitHub may include anonymized private contribution counts when a user's profile makes them public. The HTML endpoint is not a stable, documented API: markup changes may require a parser update, and GitHub may throttle requests.
 
 Three.js maps weeks to X, weekdays to Z, and contributions to Y. Change dimensions and colors in `client/src/three/constants.ts`; height defaults to `contributions × 0.35` and is never capped or logarithmic. Shared geometry/materials are disposed when cities are replaced or the viewer unmounts. A single animation loop drives damping and rendering; ResizeObserver updates and reframes the canvas.
+
+Building designs live in `client/src/three/buildingStyles.ts`: brick lofts, glass offices, limestone apartments, garden studios, and industrial works. Each user/date gets a stable design; these are visual variations, not repository attribution. The token-free calendar does not identify projects. Hovering a building shows its design name. One texture repeat represents one floor, and all roof details stay inside the contribution-height envelope. Textures and floor geometries are shared; small roof and entrance details are instanced by material, and static shadows are refreshed only when a city changes. Textures are generated locally with no image downloads.
 
 ## Controls
 

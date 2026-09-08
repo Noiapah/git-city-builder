@@ -19,6 +19,7 @@ import { frameCity } from "./camera";
 import { COLORS } from "./constants";
 export interface Inspection {
   day: ContributionDay;
+  styleName?: string;
   x: number;
   y: number;
 }
@@ -35,6 +36,8 @@ export function createScene(
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = PCFSoftShadowMap;
+  renderer.shadowMap.autoUpdate = false;
+  renderer.shadowMap.needsUpdate = true;
   renderer.domElement.tabIndex = 0;
   renderer.domElement.setAttribute(
     "aria-label",
@@ -95,6 +98,7 @@ export function createScene(
     highlight.scale.copy(mesh.scale).multiplyScalar(1.025);
     return {
       day: mesh.userData as ContributionDay,
+      styleName: mesh.userData.styleName,
       x: event.clientX - rect.left,
       y: event.clientY - rect.top,
     };
@@ -139,6 +143,7 @@ export function createScene(
       city.dispose();
       city = createCity(data);
       scene.add(city.group);
+      renderer.shadowMap.needsUpdate = true;
       leave();
       onSelect(null);
       frameCity(camera, controls, city.group);
