@@ -8,13 +8,14 @@
     "start": "node dist/server/src/index.js"
   },
   "dependencies": {
-    "express": "^5.1.0",
+    "cheerio": "^1.2.0",
     "cors": "^2.8.5",
-    "dotenv": "^17.2.2"
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0"
   },
   "devDependencies": {
-    "@types/express": "^5.0.3",
     "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
     "@types/node": "^24.3.1"
   }
 }

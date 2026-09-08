@@ -22,7 +22,7 @@ function build(username: string, year: number) {
       </p>
       <GithubSearch @build="build" />
       <div class="search-note">
-        Your public contributions, reimagined. No sign-in needed.
+        Just a username. No token or sign-in needed.
       </div>
     </section>
     <CityViewer :data="sample" sample />

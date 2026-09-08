@@ -9,7 +9,7 @@ Screenshot placeholder: the landing page features an interactive, clearly labele
 ## Features
 
 - Search a GitHub username and choose any year from 2008 through the current year.
-- Live contribution data through a backend-only GitHub GraphQL integration.
+- Public contribution data fetched directly from GitHub's calendar. No token, account connection, or sign-in required.
 - Complete 365- or 366-day calendars, including empty and future plots.
 - Exact contribution heights with secondary green intensity colors.
 - Rotate, zoom, pan, reset the camera, and inspect dates by hovering or clicking.
@@ -32,23 +32,15 @@ Use Node.js 22.12+ (Node 24 recommended), npm, and a browser with WebGL enabled.
    npm install
    ```
 
-3. Create a GitHub personal access token using [GitHub's token setup instructions](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens). Use access appropriate to the contribution data you intend to read. Private activity visibility depends on GitHub profile settings and the token's permissions; this application does not request repository contents.
-4. Copy the environment template:
-
-   ```powershell
-   Copy-Item server/.env.example server/.env
-   ```
-
-5. Replace `your_github_token_here` in `server/.env` with your token. Never put it in the client or a `VITE_` variable. `.env` files are ignored by Git.
-6. Start both apps from the root:
+3. Start both apps from the root:
 
    ```powershell
    npm run dev
    ```
 
-7. Open **http://localhost:5173**, enter **Noiapah**, choose **2026**, and click **Build City**. You can also open **http://localhost:5173/Noiapah/2026** directly.
+4. Open **http://localhost:5173**, enter a GitHub username, and click **Build City**. The year defaults to the current year and can be changed. You can also open **http://localhost:5173/Noiapah/2026** directly.
 
-Restart the backend after changing `server/.env`. No visitor sign-in is required; the application operator supplies the backend token.
+No `.env` file or GitHub token is needed. If you previously configured `GITHUB_TOKEN`, it is no longer used and can be removed from your local environment file.
 
 ## Commands
 
@@ -63,16 +55,11 @@ Restart the backend after changing `server/.env`. No visitor sign-in is required
 
 Run `npm run build` before `npm start`. Express serves the SPA fallback so direct city links work in the production build too. The server binds to loopback for local use.
 
-Run `npm run test:e2e` for browser checks with installed Google Chrome; the command starts dev servers if needed. Tests use fixture API responses and save desktop/mobile screenshots to `artifacts/`. They test the real Three.js canvas, hover/click inspection, search, year switching, loading, direct links, and empty/error states. Live authenticated GitHub requests require your token and are not covered by the fixture tests. Change `channel` in `playwright.config.ts` if using a different Playwright-supported browser. Run `npm run format` to format the source and documentation.
+Run `npm run test:e2e` for browser checks with installed Google Chrome; the command starts dev servers if needed. Tests use fixture API responses and save desktop/mobile screenshots to `artifacts/`. They test the real Three.js canvas, hover/click inspection, search, year switching, loading, direct links, and empty/error states. The opt-in live browser test fetches GitHub's public calendar through the real backend: in PowerShell run `$env:LIVE_GITHUB='1'` followed by `npm run test:e2e`, then `Remove-Item Env:LIVE_GITHUB`. Change `channel` in `playwright.config.ts` if using a different Playwright-supported browser. Run `npm run format` to format the source and documentation.
 
 ## Environment variables
 
-| Variable       | Location      | Purpose                                             |
-| -------------- | ------------- | --------------------------------------------------- |
-| `GITHUB_TOKEN` | `server/.env` | GitHub API authentication; required for real cities |
-| `PORT`         | `server/.env` | Backend port; defaults to 3000                      |
-
-If you change `PORT` during development, update the proxy target in `client/vite.config.ts` too. No environment file is required to explore the landing-page sample.
+`PORT` is optional and defaults to 3000. To change it, copy `server/.env.example` to `server/.env`, edit `PORT`, and restart the server. If you change it during development, update the proxy target in `client/vite.config.ts` too. `.env` files remain ignored by Git.
 
 ## Architecture
 
@@ -84,16 +71,18 @@ client/src/
   views/        Landing page and routed user city
 server/src/
   routes/       Username/year validation and HTTP errors
-  services/     GitHub GraphQL request and calendar normalization
+  services/     Public GitHub HTML fetch, parsing, caching, and normalization
   app.ts        Express configuration and production SPA serving
   index.ts      Environment loading and server startup
 shared/
   github.ts     Shared types and UTC calendar generation
 ```
 
-The browser calls `GET /api/github/:username/contributions?year=YYYY`. Vite proxies `/api` to Express in development. Express calls `https://api.github.com/graphql` with the server token, then returns only `{ username, year, totalContributions, days }`. Each day contains `{ date, weekday, week, contributions }`. Dates outside the selected year are excluded; missing days become empty plots. Totals are summed from the rendered days.
+The browser calls `GET /api/github/:username/contributions?year=YYYY`. Vite proxies `/api` to Express in development. Express fetches `https://github.com/users/:username/contributions?from=YYYY-01-01&to=YYYY-12-31` as public HTML without credentials or third-party services, then returns only `{ username, year, totalContributions, days }`. Each day contains `{ date, weekday, week, contributions }`.
 
-The query uses GitHub's [`contributionsCollection` and `contributionCalendar`](https://docs.github.com/en/graphql/reference/users). Only activity visible to the token is returned. The current year's future days stay empty.
+Cheerio parses calendar cells and their associated tooltips to obtain exact counts; color intensity is never used to estimate height. Dates outside the selected year are excluded, absent future days become empty plots, and totals are summed from the rendered days. Missing past days or unrecognized counts produce a readable error instead of misleading zero activity. Successful results are cached in memory for 15 minutes (up to 100 cities), and simultaneous requests for the same user/year share one upstream request. Restarting the backend clears the cache.
+
+This reads the contribution calendar visible to a signed-out visitor. It cannot access hidden private activity or repository details. GitHub may include anonymized private contribution counts when a user's profile makes them public. The HTML endpoint is not a stable, documented API: markup changes may require a parser update, and GitHub may throttle requests.
 
 Three.js maps weeks to X, weekdays to Z, and contributions to Y. Change dimensions and colors in `client/src/three/constants.ts`; height defaults to `contributions × 0.35` and is never capped or logarithmic. Shared geometry/materials are disposed when cities are replaced or the viewer unmounts. A single animation loop drives damping and rendering; ResizeObserver updates and reframes the canvas.
 
@@ -110,9 +99,8 @@ These gestures use [Three.js OrbitControls](https://threejs.org/docs/pages/Orbit
 
 ## Troubleshooting
 
-- **GitHub access is not configured:** create `server/.env`, set the token, and restart the server.
-- **Invalid or expired token:** replace the backend token and check its access.
-- **Rate limit / restricted access:** wait and retry; verify GitHub token and organization policies.
+- **Calendar could not be read:** GitHub may be temporarily blocking requests or may have changed its HTML. Retry later; persistent failures may need a parser update.
+- **Rate limit:** wait and retry. Successful city data is cached for 15 minutes to reduce requests.
 - **Backend unavailable:** ensure `npm run dev` starts both processes and ports 3000/5173 are available.
 - **No contributions:** empty plots are expected; try another year. Private activity may not be visible.
 - **WebGL unavailable:** enable browser hardware acceleration or use a WebGL-capable browser.
