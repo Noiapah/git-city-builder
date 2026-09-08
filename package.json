@@ -1,0 +1,29 @@
+{
+  "name": "github-city",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n server,client \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:client": "npm run dev -w client",
+    "dev:server": "npm run dev -w server",
+    "build": "npm run build -w server && npm run build -w client",
+    "start": "npm run start -w server",
+    "test": "tsx --test server/src/**/*.test.ts client/src/three/*.test.ts",
+    "test:e2e": "playwright test",
+    "format": "prettier --write client/src client/vite.config.ts server/src shared tests playwright.config.ts README.md *.json client/*.json server/*.json"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "concurrently": "^9.2.1",
+    "prettier": "^3.9.6",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}
