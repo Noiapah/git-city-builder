@@ -11,14 +11,36 @@ const data = shallowRef<ContributionYear | null>(null);
 const loading = ref(false);
 const error = ref("");
 const username = computed(() => String(route.params.username || ""));
-const year = computed(() => Number(route.params.year));
+const yearText = computed(() => String(route.params.year || ""));
+const year = computed(() => Number(yearText.value));
+const currentYear = new Date().getUTCFullYear();
+const validUsername = computed(() =>
+  /^[a-z\d](?:[a-z\d-]{0,37}[a-z\d])?$/i.test(username.value),
+);
+const validYear = computed(
+  () =>
+    /^\d{4}$/.test(yearText.value) &&
+    year.value >= 2008 &&
+    year.value <= currentYear,
+);
+const routeProblem = computed(() => {
+  if (!validUsername.value)
+    return "The GitHub username in this link is invalid.";
+  if (!validYear.value)
+    return `The year in this link must be between 2008 and ${currentYear}.`;
+  return "";
+});
 let controller: AbortController | undefined;
 async function load() {
   controller?.abort();
-  const request = new AbortController();
-  controller = request;
   data.value = null;
   error.value = "";
+  if (routeProblem.value) {
+    loading.value = false;
+    return;
+  }
+  const request = new AbortController();
+  controller = request;
   loading.value = true;
   try {
     data.value = await fetchContributions(
@@ -48,23 +70,30 @@ onBeforeUnmount(() => controller?.abort());
       <div>
         <RouterLink class="back-link" to="/">← Back to the overview</RouterLink>
         <h1>
-          {{ data?.username || username
-          }}<span class="year-title"> / {{ year }}</span>
+          {{ routeProblem ? "Invalid city link" : data?.username || username
+          }}<span v-if="!routeProblem" class="year-title"> / {{ year }}</span>
         </h1>
         <p v-if="data">
           {{ data.totalContributions.toLocaleString() }} contributions ·
           {{ data.days.length }} days of possibility
         </p>
+        <p v-else-if="routeProblem">Check the address or start a new city.</p>
         <p v-else>A year of contributions, a city of your own.</p>
       </div>
       <GithubSearch
-        :username="username"
-        :year="year"
+        :username="validUsername ? username : ''"
+        :year="validYear ? year : currentYear"
         :loading="loading"
         @build="build"
       />
     </div>
-    <div v-if="loading" class="status-panel" role="status">
+    <div v-if="routeProblem" class="status-panel error-panel" role="alert">
+      <span class="error-icon">!</span>
+      <h2>This city link isn't valid.</h2>
+      <p>{{ routeProblem }}</p>
+      <RouterLink class="secondary" to="/">Build another city</RouterLink>
+    </div>
+    <div v-else-if="loading" class="status-panel" role="status">
       <div class="loading-buildings"><i></i><i></i><i></i></div>
       <h2>Building city...</h2>
       <p>Gathering a year of your GitHub contributions.</p>

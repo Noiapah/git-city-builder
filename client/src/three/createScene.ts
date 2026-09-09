@@ -17,6 +17,7 @@ import type { ContributionDay, ContributionYear } from "../../../shared/github";
 import { createCity } from "./createCity";
 import { frameCity } from "./camera";
 import { COLORS } from "./constants";
+import { createRenderScheduler } from "./renderScheduler";
 export interface Inspection {
   day: ContributionDay;
   styleName?: string;
@@ -48,6 +49,11 @@ export function createScene(
   controls.enableDamping = true;
   controls.maxPolarAngle = Math.PI / 2 - 0.03;
   controls.listenToKeyEvents(renderer.domElement);
+  const scheduler = createRenderScheduler({
+    update: () => controls.update(),
+    render: () => renderer.render(scene, camera),
+  });
+  controls.addEventListener("change", scheduler.invalidate);
   scene.add(new AmbientLight("#ffffff", 2));
   const sun = new DirectionalLight("#fff9e9", 3);
   sun.position.set(-20, 40, 20);
@@ -76,9 +82,23 @@ export function createScene(
     renderer.setSize(width, height);
     camera.updateProjectionMatrix();
     frameCity(camera, controls, city.group);
+    scheduler.invalidate();
   };
   const observer = new ResizeObserver(resize);
   observer.observe(host);
+  let inViewport = true;
+  let pageVisible = !document.hidden;
+  const updateRendering = () => scheduler.setEnabled(inViewport && pageVisible);
+  const intersectionObserver = new IntersectionObserver(([entry]) => {
+    inViewport = entry.isIntersecting;
+    updateRendering();
+  });
+  intersectionObserver.observe(host);
+  const visibilityChange = () => {
+    pageVisible = !document.hidden;
+    updateRendering();
+  };
+  document.addEventListener("visibilitychange", visibilityChange);
   resize();
   const raycaster = new Raycaster();
   const pointer = new Vector2();
@@ -93,9 +113,13 @@ export function createScene(
     raycaster.setFromCamera(pointer, camera);
     const mesh = raycaster.intersectObjects(city.targets, false)[0]?.object;
     highlight.visible = !!mesh;
-    if (!mesh) return null;
+    if (!mesh) {
+      scheduler.invalidate();
+      return null;
+    }
     highlight.position.copy(mesh.position);
     highlight.scale.copy(mesh.scale).multiplyScalar(1.025);
+    scheduler.invalidate();
     return {
       day: mesh.userData as ContributionDay,
       styleName: mesh.userData.styleName,
@@ -111,6 +135,7 @@ export function createScene(
     if (!event.buttons) onHover(hit(event));
     else {
       highlight.visible = false;
+      scheduler.invalidate();
       onHover(null);
     }
   };
@@ -123,6 +148,7 @@ export function createScene(
   };
   const leave = () => {
     highlight.visible = false;
+    scheduler.invalidate();
     onHover(null);
   };
   const canvas = renderer.domElement;
@@ -130,13 +156,7 @@ export function createScene(
   canvas.addEventListener("pointermove", pointerMove);
   canvas.addEventListener("pointerup", pointerUp);
   canvas.addEventListener("pointerleave", leave);
-  let frame = 0;
-  const animate = () => {
-    frame = requestAnimationFrame(animate);
-    controls.update();
-    renderer.render(scene, camera);
-  };
-  animate();
+  scheduler.invalidate();
   return {
     update(data: ContributionYear) {
       scene.remove(city.group);
@@ -147,9 +167,11 @@ export function createScene(
       leave();
       onSelect(null);
       frameCity(camera, controls, city.group);
+      scheduler.invalidate();
     },
     reset() {
       frameCity(camera, controls, city.group);
+      scheduler.invalidate();
     },
     zoom(factor: number) {
       camera.position
@@ -157,10 +179,14 @@ export function createScene(
         .multiplyScalar(factor)
         .add(controls.target);
       controls.update();
+      scheduler.invalidate();
     },
     dispose() {
-      cancelAnimationFrame(frame);
+      scheduler.dispose();
       observer.disconnect();
+      intersectionObserver.disconnect();
+      document.removeEventListener("visibilitychange", visibilityChange);
+      controls.removeEventListener("change", scheduler.invalidate);
       controls.dispose();
       canvas.removeEventListener("pointerdown", pointerDown);
       canvas.removeEventListener("pointermove", pointerMove);

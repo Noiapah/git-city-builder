@@ -73,6 +73,14 @@ test("search, direct links, changing years, loading, retry and empty cities work
       },
     });
   });
+  await page.goto("/Noiapah/not-a-year");
+  await expect(page.getByRole("alert")).toContainText(
+    "year in this link must be between 2008",
+  );
+  await expect(
+    page.getByRole("heading", { name: "Invalid city link" }),
+  ).toBeVisible();
+  expect(years).toEqual([]);
   await page.goto("/");
   await page.getByRole("textbox", { name: "GitHub username" }).fill("Noiapah");
   await page.getByRole("combobox").selectOption("2026");
