@@ -220,6 +220,62 @@ input::placeholder {
   text-align: left;
   margin: 9px 0;
 }
+.architecture-picker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 13px;
+}
+.architecture-heading > span {
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: 1.5px;
+  color: #657859;
+}
+.architecture-heading p {
+  font-size: 11px;
+  color: #85917c;
+  margin: 5px 0 0;
+}
+.architecture-options {
+  display: flex;
+  gap: 5px;
+  padding: 4px;
+  border: 1px solid #dce3d4;
+  border-radius: 10px;
+  background: #edf1e8;
+}
+.architecture-options button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 15px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: #718066;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.architecture-options button:hover {
+  background: #e2e9da;
+}
+.architecture-options button[aria-pressed="true"] {
+  background: #fffef9;
+  border-color: #d2dcc8;
+  color: #365b3c;
+  box-shadow: 0 2px 4px #2c48200a;
+}
+.architecture-options svg {
+  width: 25px;
+  height: 25px;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+  fill: none;
+}
 .city-viewer {
   height: 440px;
   position: relative;
@@ -599,6 +655,28 @@ input::placeholder {
   }
 }
 @media (max-width: 600px) {
+  .architecture-picker {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 9px;
+  }
+  .architecture-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .architecture-heading p {
+    font-size: 10px;
+    margin: 0;
+    text-align: right;
+  }
+  .architecture-options button {
+    flex: 1;
+    padding: 8px 6px;
+    gap: 5px;
+    font-size: 11px;
+  }
   .header {
     height: 70px;
   }
@@ -662,7 +740,8 @@ input::placeholder {
     gap: 6px 12px;
     font-size: 9px;
   }
-  .gesture-hints span, .legend span {
+  .gesture-hints span,
+  .legend span {
     white-space: nowrap;
   }
   .view-controls {

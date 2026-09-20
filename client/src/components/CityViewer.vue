@@ -1,14 +1,34 @@
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, ref, shallowRef, watch } from "vue";
+import {
+  computed,
+  onMounted,
+  onBeforeUnmount,
+  ref,
+  shallowRef,
+  watch,
+} from "vue";
 import type { ContributionYear } from "../../../shared/github";
 import { createScene, type Inspection } from "../three/createScene";
 import BuildingTooltip from "./BuildingTooltip.vue";
-import { BUILDING_STYLES } from "../three/buildingStyles";
+import {
+  ARCHITECTURES,
+  buildingStyles,
+  type Architecture,
+} from "../three/buildingStyles";
+// Shared across viewers so a choice on the sample carries into a personal city.
+import { architecture } from "../three/architecturePreference";
 const props = defineProps<{ data: ContributionYear; sample?: boolean }>();
 const host = ref<HTMLDivElement>();
 const hover = shallowRef<Inspection | null>(null);
 const selected = shallowRef<Inspection | null>(null);
 const error = ref("");
+const styles = computed(() => buildingStyles(architecture.value));
+const activeArchitecture = computed(() =>
+  ARCHITECTURES.find((item) => item.id === architecture.value)!,
+);
+function chooseArchitecture(value: Architecture) {
+  architecture.value = value;
+}
 let scene: ReturnType<typeof createScene> | undefined;
 onMounted(() => {
   try {
@@ -21,6 +41,7 @@ onMounted(() => {
       (hit) => {
         selected.value = hit;
       },
+      architecture.value,
     );
   } catch {
     error.value =
@@ -29,12 +50,47 @@ onMounted(() => {
 });
 watch(
   () => props.data,
-  (data) => scene?.update(data),
+  (data) => scene?.update(data, architecture.value),
 );
+watch(architecture, (value) => scene?.update(props.data, value, true));
 onBeforeUnmount(() => scene?.dispose());
 </script>
 <template>
-  <section class="city-viewer" aria-label="3D contribution city">
+  <div class="architecture-picker" role="group" aria-label="Architecture style">
+    <div class="architecture-heading">
+      <span>ARCHITECTURE</span>
+      <p>{{ activeArchitecture.description }}</p>
+    </div>
+    <div class="architecture-options">
+      <button
+        v-for="option in ARCHITECTURES"
+        :key="option.id"
+        :aria-pressed="architecture === option.id"
+        @click="chooseArchitecture(option.id)"
+      >
+        <svg viewBox="0 0 32 28" aria-hidden="true">
+          <path
+            v-if="option.id === 'modern'"
+            d="M4 25V10h10v15M14 25V3h13v22M18 8h5M18 13h5M18 18h5M7 15h4M7 20h4M2 25h28"
+          />
+          <path
+            v-else-if="option.id === 'new-york'"
+            d="M3 25V12h8v13M11 25V8h5V4h7v4h5v17M17 4V1M15 12h3m4 0h2M15 17h3m4 0h2M15 22h3m4 0h2M6 16h2m-2 5h2M1 25h30"
+          />
+          <path
+            v-else
+            d="M3 25V11L10 3l7 8v14M3 12h14M10 12v13M20 25V7h3v4h3V7h3v18M7 17h6M23 17h3M1 25h30"
+          />
+        </svg>
+        {{ option.name }}
+      </button>
+    </div>
+  </div>
+  <section
+    class="city-viewer"
+    aria-label="3D contribution city"
+    :data-architecture="architecture"
+  >
     <div ref="host" class="canvas-host"></div>
     <div class="viewer-label">
       <span class="live-dot"></span
@@ -89,7 +145,7 @@ onBeforeUnmount(() => scene?.dispose());
       <div class="legend">
         <span>Building styles</span
         ><i
-          v-for="style in BUILDING_STYLES"
+          v-for="style in styles"
           :key="style.name"
           :title="style.name"
           :style="{ background: style.wall }"

@@ -2,7 +2,11 @@ import { BoxGeometry, Group, Mesh, MeshStandardMaterial } from "three";
 import type { ContributionYear } from "../../../shared/github";
 import { COLORS, PLOT_GAP, PLOT_HEIGHT, PLOT_SIZE } from "./constants";
 import { createBuildingFactory } from "./createBuilding";
-export function createCity(data: ContributionYear) {
+import type { Architecture } from "./buildingStyles";
+export function createCity(
+  data: ContributionYear,
+  architecture: Architecture = "modern",
+) {
   const group = new Group();
   const geometry = new BoxGeometry(1, 1, 1);
   const plotMaterial = new MeshStandardMaterial({
@@ -13,7 +17,7 @@ export function createCity(data: ContributionYear) {
     color: COLORS.ground,
     roughness: 1,
   });
-  const buildings = createBuildingFactory(geometry);
+  const buildings = createBuildingFactory(geometry, architecture);
   const columns = Math.max(...data.days.map((day) => day.week), 0) + 1;
   const step = PLOT_SIZE + PLOT_GAP;
   const ground = new Mesh(geometry, groundMaterial);

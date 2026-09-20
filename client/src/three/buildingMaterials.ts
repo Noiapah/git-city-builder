@@ -43,16 +43,33 @@ function facadeTexture(style: BuildingStyle) {
       for (let x = y % 16 ? -10 : 0; x < width; x += 20)
         rectangle(x, y, 1, 8, style.accent);
     }
-  } else if (style.pattern === "timber" || style.pattern === "metal") {
-    for (let x = 0; x < width; x += style.pattern === "metal" ? 5 : 12)
-      rectangle(x, 0, 1, height, style.accent);
+  } else if (style.pattern === "timber") {
+    rectangle(0, 0, width, 6, style.accent);
+    for (let x = 0; x < width; x += 64) {
+      rectangle(x, 0, 5, height, style.accent);
+      for (let y = 0; y < height; y++) {
+        rectangle(x + y, y, 4, 1, style.accent);
+        rectangle(x + 60 - y, y, 4, 1, style.accent);
+      }
+    }
+  } else if (style.pattern === "metal") {
+    for (let x = 0; x < width; x += 5) rectangle(x, 0, 1, height, style.accent);
   } else if (style.pattern === "stone") {
-    for (let y = 0; y < height; y += 16)
+    for (let y = 0; y < height; y += 16) {
       rectangle(0, y, width, 1, style.accent);
+      for (let x = y % 32 ? -16 : 0; x < width; x += 32)
+        rectangle(x, y, 1, 16, style.accent);
+    }
   }
   rectangle(0, 0, width, style.pattern === "curtain" ? 3 : 5, style.frame);
   const cell = width / style.columns;
-  const glassWidth = cell * (style.pattern === "curtain" ? 0.85 : 0.55);
+  const glassWidth =
+    cell *
+    (style.pattern === "curtain"
+      ? 0.85
+      : style.form === "battlement"
+        ? 0.23
+        : 0.55);
   for (let column = 0; column < style.columns; column++) {
     const x = column * cell + (cell - glassWidth) / 2;
     const y = style.pattern === "curtain" ? 7 : 17;
@@ -77,8 +94,8 @@ function facadeTexture(style: BuildingStyle) {
   return texture;
 }
 
-export function createBuildingMaterials() {
-  const palettes = BUILDING_STYLES.map((style) => {
+export function createBuildingMaterials(styles = BUILDING_STYLES) {
+  const palettes = styles.map((style) => {
     const texture = facadeTexture(style);
     const facade = new MeshStandardMaterial({
       map: texture,

@@ -18,6 +18,7 @@ import { createCity } from "./createCity";
 import { frameCity } from "./camera";
 import { COLORS } from "./constants";
 import { createRenderScheduler } from "./renderScheduler";
+import type { Architecture } from "./buildingStyles";
 export interface Inspection {
   day: ContributionDay;
   styleName?: string;
@@ -29,6 +30,7 @@ export function createScene(
   initial: ContributionYear,
   onHover: (hit: Inspection | null) => void,
   onSelect: (hit: Inspection | null) => void,
+  initialArchitecture: Architecture = "modern",
 ) {
   const scene = new Scene();
   scene.background = new Color(COLORS.background);
@@ -68,7 +70,8 @@ export function createScene(
   });
   sun.shadow.bias = -0.001;
   scene.add(sun);
-  let city = createCity(initial);
+  let architecture = initialArchitecture;
+  let city = createCity(initial, architecture);
   scene.add(city.group);
   const highlight = new Mesh(
     new BoxGeometry(1, 1, 1),
@@ -158,15 +161,20 @@ export function createScene(
   canvas.addEventListener("pointerleave", leave);
   scheduler.invalidate();
   return {
-    update(data: ContributionYear) {
+    update(
+      data: ContributionYear,
+      nextArchitecture: Architecture = architecture,
+      preserveCamera = false,
+    ) {
+      architecture = nextArchitecture;
       scene.remove(city.group);
       city.dispose();
-      city = createCity(data);
+      city = createCity(data, architecture);
       scene.add(city.group);
       renderer.shadowMap.needsUpdate = true;
       leave();
       onSelect(null);
-      frameCity(camera, controls, city.group);
+      if (!preserveCamera) frameCity(camera, controls, city.group);
       scheduler.invalidate();
     },
     reset() {

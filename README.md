@@ -11,7 +11,8 @@ Screenshot placeholder: the landing page features an interactive, clearly labele
 - Search a GitHub username and choose any year from 2008 through the current year.
 - Public contribution data fetched directly from GitHub's calendar. No token, account connection, or sign-in required.
 - Complete 365- or 366-day calendars, including empty and future plots.
-- Exact contribution heights with five architectural styles, textured façades, floor-by-floor windows, entrances, parapets, skylights, and rooftop ventilation.
+- Switch between Modern, New York, and Medieval architecture, each with three building designs. Your choice is remembered across visits.
+- Exact contribution heights with textured façades, floor-by-floor windows, and distinctive roofs: glass pavilions, brownstones with water tanks and fire escapes, timber houses, and stone keeps.
 - Rotate, zoom, pan, reset the camera, and inspect dates by hovering or clicking.
 - Shareable `/:username/:year` routes, including direct page loads.
 - Responsive canvas, loading, retry, empty states, validation, and readable API errors.
@@ -86,7 +87,9 @@ This reads the contribution calendar visible to a signed-out visitor. It cannot 
 
 Three.js maps weeks to X, weekdays to Z, and contributions to Y. Change dimensions and colors in `client/src/three/constants.ts`; height defaults to `contributions × 0.35` and is never capped or logarithmic. Shared geometry/materials are disposed when cities are replaced or the viewer unmounts. A single animation loop drives damping and rendering; ResizeObserver updates and reframes the canvas.
 
-Building designs live in `client/src/three/buildingStyles.ts`: brick lofts, glass offices, limestone apartments, garden studios, and industrial works. Each user/date gets a stable design; these are visual variations, not repository attribution. The token-free calendar does not identify projects. Hovering a building shows its design name. One texture repeat represents one floor, and all roof details stay inside the contribution-height envelope. Textures and floor geometries are shared; small roof and entrance details are instanced by material, and static shadows are refreshed only when a city changes. Textures are generated locally with no image downloads.
+Building designs live in `client/src/three/buildingStyles.ts`: Modern has glass pavilions, concrete residences, and steel towers; New York has Brooklyn brownstones, SoHo lofts, and limestone towers; Medieval has timber guildhalls, merchant houses, and stone keeps. The architecture buttons above each viewer rebuild the city without fetching contributions again or moving the camera. The preference is stored locally in the browser and carries from the sample into personal cities.
+
+Each user/date gets a stable design within its architecture; these are visual variations, not repository attribution. The token-free calendar does not identify projects. Hovering a building shows its design name. One texture repeat represents one floor, and all roofs stay inside the contribution-height envelope, including pitched roofs, battlements, and water tanks. Textures and floor geometries are shared; roof and entrance details are instanced by geometry and material, and static shadows are refreshed only when a city changes. Textures are generated locally with no image downloads.
 
 ## Controls
 
